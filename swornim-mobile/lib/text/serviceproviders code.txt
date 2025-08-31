@@ -1,0 +1,719 @@
+# models.py
+from django.db import models
+from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.postgres.fields import ArrayField
+import uuid
+from decimal import Decimal
+
+class Location(models.Model):
+    """Location model for service providers"""
+    city = models.CharField(max_length=100)
+    district = models.CharField(max_length=100, blank=True)
+    province = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, default='Nepal')
+    latitude = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
+    address = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.city}, {self.district}"
+    
+    class Meta:
+        ordering = ['city', 'district']
+
+class ServiceProvider(models.Model):
+    """Abstract base model for all service providers"""
+    SERVICE_PROVIDER_TYPES = [
+        ('makeup_artist', 'Makeup Artist'),
+        ('photographer', 'Photographer'),
+        ('venue', 'Venue'),
+        ('caterer', 'Caterer'),
+        ('decorator', 'Decorator'),
+        ('event_organizer', 'Event Organizer'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='service_providers')
+    business_name = models.CharField(max_length=200)
+    image = models.URLField(blank=True)
+    description = models.TextField()
+    rating = models.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        default=0.00,
+        validators=[MinValueValidator(0), MaxValueValidator(5)]
+    )
+    total_reviews = models.PositiveIntegerField(default=0)
+    is_available = models.BooleanField(default=True)
+    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Meta fields
+    provider_type = models.CharField(max_length=20, choices=SERVICE_PROVIDER_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        abstract = True
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return self.business_name
+
+class Review(models.Model):
+    """Review model for service providers"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.TextField()
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        abstract = True
+        ordering = ['-created_at']
+
+class MakeupArtist(ServiceProvider):
+    """Makeup Artist service provider"""
+    session_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    bridal_package_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    specializations = ArrayField(
+        models.CharField(max_length=50),
+        default=list,
+        blank=True
+    )
+    experience_years = models.PositiveIntegerField(default=0)
+    available_dates = ArrayField(
+        models.DateField(),
+        default=list,
+        blank=True
+    )
+    
+    def save(self, *args, **kwargs):
+        self.provider_type = 'makeup_artist'
+        super().save(*args, **kwargs)
+    
+    class Meta:
+        verbose_name = "Makeup Artist"
+        verbose_name_plural = "Makeup Artists"
+
+class MakeupArtistReview(Review):
+    """Reviews for makeup artists"""
+    makeup_artist = models.ForeignKey(MakeupArtist, on_delete=models.CASCADE, related_name='reviews')
+
+class Photographer(ServiceProvider):
+    """Photographer service provider"""
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    event_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    specializations = ArrayField(
+        models.CharField(max_length=50),
+        default=list,
+        blank=True
+    )
+    experience_years = models.PositiveIntegerField(default=0)
+    available_dates = ArrayField(
+        models.DateField(),
+        default=list,
+        blank=True
+    )
+    
+    def save(self, *args, **kwargs):
+        self.provider_type = 'photographer'
+        super().save(*args, **kwargs)
+    
+    class Meta:
+        verbose_name = "Photographer"
+        verbose_name_plural = "Photographers"
+
+class PhotographerReview(Review):
+    """Reviews for photographers"""
+    photographer = models.ForeignKey(Photographer, on_delete=models.CASCADE, related_name='reviews')
+
+class Venue(ServiceProvider):
+    """Venue service provider"""
+    VENUE_TYPES = [
+        ('wedding', 'Wedding'),
+        ('conference', 'Conference'),
+        ('party', 'Party'),
+        ('exhibition', 'Exhibition'),
+        ('other', 'Other'),
+    ]
+    
+    address = models.TextField()
+    capacity = models.PositiveIntegerField()
+    price_per_hour = models.DecimalField(max_digits=10, decimal_places=2)
+    amenities = ArrayField(
+        models.CharField(max_length=100),
+        default=list,
+        blank=True
+    )
+    images = ArrayField(
+        models.URLField(),
+        default=list,
+        blank=True
+    )
+    gallery = ArrayField(
+        models.URLField(),
+        default=list,
+        blank=True
+    )
+    services = ArrayField(
+        models.CharField(max_length=100),
+        default=list,
+        blank=True
+    )
+    venue_type = models.CharField(max_length=20, choices=VENUE_TYPES, default='other')
+    contact_phone = models.CharField(max_length=20)
+    contact_email = models.EmailField()
+    
+    def save(self, *args, **kwargs):
+        self.provider_type = 'venue'
+        super().save(*args, **kwargs)
+    
+    class Meta:
+        verbose_name = "Venue"
+        verbose_name_plural = "Venues"
+
+class VenueReview(Review):
+    """Reviews for venues"""
+    venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name='reviews')
+
+class Caterer(ServiceProvider):
+    """Caterer service provider"""
+    price_per_person = models.DecimalField(max_digits=8, decimal_places=2)
+    cuisine_types = ArrayField(
+        models.CharField(max_length=50),
+        default=list,
+        blank=True
+    )
+    service_types = ArrayField(
+        models.CharField(max_length=50),
+        default=list,
+        blank=True
+    )
+    experience_years = models.PositiveIntegerField(default=0)
+    available_dates = ArrayField(
+        models.DateField(),
+        default=list,
+        blank=True
+    )
+    
+    def save(self, *args, **kwargs):
+        self.provider_type = 'caterer'
+        super().save(*args, **kwargs)
+    
+    class Meta:
+        verbose_name = "Caterer"
+        verbose_name_plural = "Caterers"
+
+class CatererReview(Review):
+    """Reviews for caterers"""
+    caterer = models.ForeignKey(Caterer, on_delete=models.CASCADE, related_name='reviews')
+
+class Decorator(ServiceProvider):
+    """Decorator service provider"""
+    package_starting_price = models.DecimalField(max_digits=10, decimal_places=2)
+    hourly_rate = models.DecimalField(max_digits=8, decimal_places=2)
+    specializations = ArrayField(
+        models.CharField(max_length=50),
+        default=list,
+        blank=True
+    )
+    experience_years = models.PositiveIntegerField(default=0)
+    available_dates = ArrayField(
+        models.DateField(),
+        default=list,
+        blank=True
+    )
+    
+    def save(self, *args, **kwargs):
+        self.provider_type = 'decorator'
+        super().save(*args, **kwargs)
+    
+    class Meta:
+        verbose_name = "Decorator"
+        verbose_name_plural = "Decorators"
+
+class DecoratorReview(Review):
+    """Reviews for decorators"""
+    decorator = models.ForeignKey(Decorator, on_delete=models.CASCADE, related_name='reviews')
+
+class EventOrganizer(ServiceProvider):
+    """Event Organizer service provider"""
+    package_starting_price = models.DecimalField(max_digits=10, decimal_places=2)
+    hourly_consultation_rate = models.DecimalField(max_digits=8, decimal_places=2)
+    event_types = ArrayField(
+        models.CharField(max_length=50),
+        default=list,
+        blank=True
+    )
+    experience_years = models.PositiveIntegerField(default=0)
+    available_dates = ArrayField(
+        models.DateField(),
+        default=list,
+        blank=True
+    )
+    
+    def save(self, *args, **kwargs):
+        self.provider_type = 'event_organizer'
+        super().save(*args, **kwargs)
+    
+    class Meta:
+        verbose_name = "Event Organizer"
+        verbose_name_plural = "Event Organizers"
+
+class EventOrganizerReview(Review):
+    """Reviews for event organizers"""
+    event_organizer = models.ForeignKey(EventOrganizer, on_delete=models.CASCADE, related_name='reviews')
+
+
+# serializers.py
+from rest_framework import serializers
+from .models import *
+
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = '__all__'
+
+class ReviewSerializer(serializers.ModelSerializer):
+    reviewer_name = serializers.CharField(source='reviewer.get_full_name', read_only=True)
+    
+    class Meta:
+        fields = ['id', 'reviewer', 'reviewer_name', 'rating', 'comment', 'created_at', 'updated_at']
+        abstract = True
+
+class MakeupArtistReviewSerializer(ReviewSerializer):
+    class Meta:
+        model = MakeupArtistReview
+        fields = ReviewSerializer.Meta.fields + ['makeup_artist']
+
+class PhotographerReviewSerializer(ReviewSerializer):
+    class Meta:
+        model = PhotographerReview
+        fields = ReviewSerializer.Meta.fields + ['photographer']
+
+class VenueReviewSerializer(ReviewSerializer):
+    class Meta:
+        model = VenueReview
+        fields = ReviewSerializer.Meta.fields + ['venue']
+
+class CatererReviewSerializer(ReviewSerializer):
+    class Meta:
+        model = CatererReview
+        fields = ReviewSerializer.Meta.fields + ['caterer']
+
+class DecoratorReviewSerializer(ReviewSerializer):
+    class Meta:
+        model = DecoratorReview
+        fields = ReviewSerializer.Meta.fields + ['decorator']
+
+class EventOrganizerReviewSerializer(ReviewSerializer):
+    class Meta:
+        model = EventOrganizerReview
+        fields = ReviewSerializer.Meta.fields + ['event_organizer']
+
+class BaseServiceProviderSerializer(serializers.ModelSerializer):
+    location = LocationSerializer(read_only=True)
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    
+    class Meta:
+        fields = [
+            'id', 'user', 'user_name', 'business_name', 'image', 'description',
+            'rating', 'total_reviews', 'is_available', 'location', 'provider_type',
+            'created_at', 'updated_at'
+        ]
+        abstract = True
+
+class MakeupArtistSerializer(BaseServiceProviderSerializer):
+    reviews = MakeupArtistReviewSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = MakeupArtist
+        fields = BaseServiceProviderSerializer.Meta.fields + [
+            'session_rate', 'bridal_package_rate', 'specializations',
+            'experience_years', 'available_dates', 'reviews'
+        ]
+
+class PhotographerSerializer(BaseServiceProviderSerializer):
+    reviews = PhotographerReviewSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Photographer
+        fields = BaseServiceProviderSerializer.Meta.fields + [
+            'hourly_rate', 'event_rate', 'specializations',
+            'experience_years', 'available_dates', 'reviews'
+        ]
+
+class VenueSerializer(BaseServiceProviderSerializer):
+    reviews = VenueReviewSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Venue
+        fields = BaseServiceProviderSerializer.Meta.fields + [
+            'address', 'capacity', 'price_per_hour', 'amenities', 'images',
+            'gallery', 'services', 'venue_type', 'contact_phone', 'contact_email', 'reviews'
+        ]
+
+class CatererSerializer(BaseServiceProviderSerializer):
+    reviews = CatererReviewSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Caterer
+        fields = BaseServiceProviderSerializer.Meta.fields + [
+            'price_per_person', 'cuisine_types', 'service_types',
+            'experience_years', 'available_dates', 'reviews'
+        ]
+
+class DecoratorSerializer(BaseServiceProviderSerializer):
+    reviews = DecoratorReviewSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Decorator
+        fields = BaseServiceProviderSerializer.Meta.fields + [
+            'package_starting_price', 'hourly_rate', 'specializations',
+            'experience_years', 'available_dates', 'reviews'
+        ]
+
+class EventOrganizerSerializer(BaseServiceProviderSerializer):
+    reviews = EventOrganizerReviewSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = EventOrganizer
+        fields = BaseServiceProviderSerializer.Meta.fields + [
+            'package_starting_price', 'hourly_consultation_rate', 'event_types',
+            'experience_years', 'available_dates', 'reviews'
+        ]
+
+
+# views.py
+from rest_framework import generics, filters, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q
+from .models import *
+from .serializers import *
+from .filters import ServiceProviderFilter
+
+class LocationListCreateView(generics.ListCreateAPIView):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+class LocationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+# Makeup Artist Views
+class MakeupArtistListCreateView(generics.ListCreateAPIView):
+    queryset = MakeupArtist.objects.all()
+    serializer_class = MakeupArtistSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_available', 'location__city', 'specializations']
+    search_fields = ['business_name', 'description', 'specializations']
+    ordering_fields = ['created_at', 'rating', 'session_rate']
+    ordering = ['-created_at']
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class MakeupArtistDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = MakeupArtist.objects.all()
+    serializer_class = MakeupArtistSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+# Photographer Views
+class PhotographerListCreateView(generics.ListCreateAPIView):
+    queryset = Photographer.objects.all()
+    serializer_class = PhotographerSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_available', 'location__city', 'specializations']
+    search_fields = ['business_name', 'description', 'specializations']
+    ordering_fields = ['created_at', 'rating', 'hourly_rate']
+    ordering = ['-created_at']
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class PhotographerDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Photographer.objects.all()
+    serializer_class = PhotographerSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+# Venue Views
+class VenueListCreateView(generics.ListCreateAPIView):
+    queryset = Venue.objects.all()
+    serializer_class = VenueSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_available', 'location__city', 'venue_type', 'capacity']
+    search_fields = ['business_name', 'description', 'address']
+    ordering_fields = ['created_at', 'rating', 'price_per_hour', 'capacity']
+    ordering = ['-created_at']
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class VenueDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Venue.objects.all()
+    serializer_class = VenueSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+# Caterer Views
+class CatererListCreateView(generics.ListCreateAPIView):
+    queryset = Caterer.objects.all()
+    serializer_class = CatererSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_available', 'location__city', 'cuisine_types', 'service_types']
+    search_fields = ['business_name', 'description', 'cuisine_types']
+    ordering_fields = ['created_at', 'rating', 'price_per_person']
+    ordering = ['-created_at']
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class CatererDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Caterer.objects.all()
+    serializer_class = CatererSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+# Decorator Views
+class DecoratorListCreateView(generics.ListCreateAPIView):
+    queryset = Decorator.objects.all()
+    serializer_class = DecoratorSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_available', 'location__city', 'specializations']
+    search_fields = ['business_name', 'description', 'specializations']
+    ordering_fields = ['created_at', 'rating', 'package_starting_price']
+    ordering = ['-created_at']
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class DecoratorDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Decorator.objects.all()
+    serializer_class = DecoratorSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+# Event Organizer Views
+class EventOrganizerListCreateView(generics.ListCreateAPIView):
+    queryset = EventOrganizer.objects.all()
+    serializer_class = EventOrganizerSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_available', 'location__city', 'event_types']
+    search_fields = ['business_name', 'description', 'event_types']
+    ordering_fields = ['created_at', 'rating', 'package_starting_price']
+    ordering = ['-created_at']
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class EventOrganizerDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = EventOrganizer.objects.all()
+    serializer_class = EventOrganizerSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+# Combined Search View
+@api_view(['GET'])
+def search_all_providers(request):
+    """Search across all service provider types"""
+    query = request.GET.get('q', '')
+    location = request.GET.get('location', '')
+    min_rating = request.GET.get('min_rating', 0)
+    
+    if not query:
+        return Response({'error': 'Query parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Search filters
+    search_filter = Q(business_name__icontains=query) | Q(description__icontains=query)
+    filters = Q(is_available=True)
+    
+    if location:
+        filters &= Q(location__city__icontains=location)
+    
+    if min_rating:
+        filters &= Q(rating__gte=min_rating)
+    
+    # Search all provider types
+    makeup_artists = MakeupArtist.objects.filter(search_filter & filters)
+    photographers = Photographer.objects.filter(search_filter & filters)
+    venues = Venue.objects.filter(search_filter & filters)
+    caterers = Caterer.objects.filter(search_filter & filters)
+    decorators = Decorator.objects.filter(search_filter & filters)
+    event_organizers = EventOrganizer.objects.filter(search_filter & filters)
+    
+    # Serialize results
+    results = {
+        'makeup_artists': MakeupArtistSerializer(makeup_artists, many=True).data,
+        'photographers': PhotographerSerializer(photographers, many=True).data,
+        'venues': VenueSerializer(venues, many=True).data,
+        'caterers': CatererSerializer(caterers, many=True).data,
+        'decorators': DecoratorSerializer(decorators, many=True).data,
+        'event_organizers': EventOrganizerSerializer(event_organizers, many=True).data,
+    }
+    
+    return Response(results)
+
+@api_view(['GET'])
+def provider_stats(request):
+    """Get statistics about all service providers"""
+    stats = {
+        'makeup_artists': MakeupArtist.objects.count(),
+        'photographers': Photographer.objects.count(),
+        'venues': Venue.objects.count(),
+        'caterers': Caterer.objects.count(),
+        'decorators': Decorator.objects.count(),
+        'event_organizers': EventOrganizer.objects.count(),
+    }
+    
+    total_providers = sum(stats.values())
+    available_providers = (
+        MakeupArtist.objects.filter(is_available=True).count() +
+        Photographer.objects.filter(is_available=True).count() +
+        Venue.objects.filter(is_available=True).count() +
+        Caterer.objects.filter(is_available=True).count() +
+        Decorator.objects.filter(is_available=True).count() +
+        EventOrganizer.objects.filter(is_available=True).count()
+    )
+    
+    stats.update({
+        'total_providers': total_providers,
+        'available_providers': available_providers,
+    })
+    
+    return Response(stats)
+
+
+# urls.py
+from django.urls import path, include
+from . import views
+
+urlpatterns = [
+    # Location URLs
+    path('locations/', views.LocationListCreateView.as_view(), name='location-list-create'),
+    path('locations/<int:pk>/', views.LocationDetailView.as_view(), name='location-detail'),
+    
+    # Makeup Artist URLs
+    path('makeup-artists/', views.MakeupArtistListCreateView.as_view(), name='makeup-artist-list-create'),
+    path('makeup-artists/<uuid:pk>/', views.MakeupArtistDetailView.as_view(), name='makeup-artist-detail'),
+    
+    # Photographer URLs
+    path('photographers/', views.PhotographerListCreateView.as_view(), name='photographer-list-create'),
+    path('photographers/<uuid:pk>/', views.PhotographerDetailView.as_view(), name='photographer-detail'),
+    
+    # Venue URLs
+    path('venues/', views.VenueListCreateView.as_view(), name='venue-list-create'),
+    path('venues/<uuid:pk>/', views.VenueDetailView.as_view(), name='venue-detail'),
+    
+    # Caterer URLs
+    path('caterers/', views.CatererListCreateView.as_view(), name='caterer-list-create'),
+    path('caterers/<uuid:pk>/', views.CatererDetailView.as_view(), name='caterer-detail'),
+    
+    # Decorator URLs
+    path('decorators/', views.DecoratorListCreateView.as_view(), name='decorator-list-create'),
+    path('decorators/<uuid:pk>/', views.DecoratorDetailView.as_view(), name='decorator-detail'),
+    
+    # Event Organizer URLs
+    path('event-organizers/', views.EventOrganizerListCreateView.as_view(), name='event-organizer-list-create'),
+    path('event-organizers/<uuid:pk>/', views.EventOrganizerDetailView.as_view(), name='event-organizer-detail'),
+    
+    # Search and Stats URLs
+    path('search/', views.search_all_providers, name='search-all-providers'),
+    path('stats/', views.provider_stats, name='provider-stats'),
+]
+
+
+# admin.py
+from django.contrib import admin
+from .models import *
+
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ['city', 'district', 'province', 'country']
+    list_filter = ['province', 'country']
+    search_fields = ['city', 'district', 'address']
+
+class ReviewInline(admin.TabularInline):
+    extra = 0
+    readonly_fields = ['created_at', 'updated_at']
+
+class MakeupArtistReviewInline(ReviewInline):
+    model = MakeupArtistReview
+
+class PhotographerReviewInline(ReviewInline):
+    model = PhotographerReview
+
+class VenueReviewInline(ReviewInline):
+    model = VenueReview
+
+class CatererReviewInline(ReviewInline):
+    model = CatererReview
+
+class DecoratorReviewInline(ReviewInline):
+    model = DecoratorReview
+
+class EventOrganizerReviewInline(ReviewInline):
+    model = EventOrganizerReview
+
+@admin.register(MakeupArtist)
+class MakeupArtistAdmin(admin.ModelAdmin):
+    list_display = ['business_name', 'user', 'rating', 'is_available', 'session_rate']
+    list_filter = ['is_available', 'specializations', 'location__city']
+    search_fields = ['business_name', 'description']
+    inlines = [MakeupArtistReviewInline]
+
+@admin.register(Photographer)
+class PhotographerAdmin(admin.ModelAdmin):
+    list_display = ['business_name', 'user', 'rating', 'is_available', 'hourly_rate']
+    list_filter = ['is_available', 'specializations', 'location__city']
+    search_fields = ['business_name', 'description']
+    inlines = [PhotographerReviewInline]
+
+@admin.register(Venue)
+class VenueAdmin(admin.ModelAdmin):
+    list_display = ['business_name', 'user', 'rating', 'is_available', 'capacity', 'venue_type']
+    list_filter = ['is_available', 'venue_type', 'location__city']
+    search_fields = ['business_name', 'description', 'address']
+    inlines = [VenueReviewInline]
+
+@admin.register(Caterer)
+class CatererAdmin(admin.ModelAdmin):
+    list_display = ['business_name', 'user', 'rating', 'is_available', 'price_per_person']
+    list_filter = ['is_available', 'cuisine_types', 'location__city']
+    search_fields = ['business_name', 'description']
+    inlines = [CatererReviewInline]
+
+@admin.register(Decorator)
+class DecoratorAdmin(admin.ModelAdmin):
+    list_display = ['business_name', 'user', 'rating', 'is_available', 'package_starting_price']
+    list_filter = ['is_available', 'specializations', 'location__city']
+    search_fields = ['business_name', 'description']
+    inlines = [DecoratorReviewInline]
+
+@admin.register(EventOrganizer)
+class EventOrganizerAdmin(admin.ModelAdmin):
+    list_display = ['business_name', 'user', 'rating', 'is_available', 'package_starting_price']
+    list_filter = ['is_available', 'event_types', 'location__city']
+    search_fields = ['business_name', 'description']
+    inlines = [EventOrganizerReviewInline]
+
+
+# requirements.txt additional packages needed:
+# djangorestframework
+# django-filter
+# django-cors-headers
+# psycopg2-binary (for PostgreSQL ArrayField support)

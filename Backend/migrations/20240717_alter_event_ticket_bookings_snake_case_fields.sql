@@ -1,0 +1,6 @@
+ALTER TABLE event_ticket_bookings
+  ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS payment_date TIMESTAMP WITH TIME ZONE,
+  ADD COLUMN IF NOT EXISTS discount_amount FLOAT,
+  ADD COLUMN IF NOT EXISTS discount_code VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS cancellation_reason TEXT; 

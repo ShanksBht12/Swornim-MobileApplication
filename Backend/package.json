@@ -1,0 +1,36 @@
+{
+  "name": "nodejs-auth-system",
+  "version": "1.0.0",
+  "description": "Complete authentication system with Node.js, Sequelize, and PostgreSQL",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "migrate": "node run-migration.js",
+    "migrate:reviews": "node run-reviews-migration.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.2.1",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^6.10.1",
+    "pdfkit": "^0.17.1",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "qrcode": "^1.5.4",
+    "sequelize": "^6.35.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,0 +1,29 @@
+State Management Strategy
+4. Provider Structure
+
+serviceProvidersProvider - List of all providers (for client dashboard)
+myServiceProviderProfileProvider - Current user's provider profile (when user is a provider)
+serviceProvidersByTypeProvider - Filtered providers by category
+
+5. API Client Methods
+
+getServiceProviders() - All providers (client view)
+getServiceProvidersByType(String type) - Filtered by category
+getMyProviderProfile() - Current user's provider data
+updateMyProviderProfile() - For provider self-management
+
+Key Benefits of This Approach
+
+Type Safety - Each provider type has specific fields
+Polymorphism - Common operations work on base class
+Extensibility - Easy to add new provider types
+Clean Separation - Client dashboard vs provider self-management
+Flexible Querying - Can filter by type, location, availability
+
+Additional Models You'll Need
+
+Review (ratings/feedback)
+Location (address/coordinates)
+Service (what they offer)
+Booking (appointments/requests)
+Portfolio (work samples)

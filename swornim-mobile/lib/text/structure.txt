@@ -1,0 +1,195 @@
+pages/
+├── auth/                    # Authentication pages
+│   ├── login_page.dart
+│   ├── register_page.dart
+│   └── role_selection_page.dart
+├── onboarding/             # App introduction (rename from 'introduction')
+│   ├── welcome_page.dart
+│   ├── features_tour_page.dart
+│   └── permissions_page.dart
+├── client/                 # Client-specific pages
+│   ├── client_dashboard.dart
+│   ├── browse_services.dart
+│   └── create_event.dart
+├── service_providers/      # All service provider pages
+│   ├── photographers/      # Your existing folder
+│   ├── makeup_artists/     # Renamed from 'makeupartist'
+│   ├── venues/            # Your existing folder
+│   └── models/            # Your existing folder
+├── booking/               # Your existing booking folder
+│   ├── booking_process.dart
+│   ├── booking_confirmation.dart
+│   └── booking_history.dart
+└── shared/                # Pages used by multiple roles
+    ├── profile_page.dart
+    ├── chat_page.dart
+    ├── notifications_page.dart
+    └── settings_page.dart
+
+
+
+
+
+
+
+
+
+
+    # Service Providers Folder Structure
+
+## photographers/
+```
+photographers/
+├── photographer_dashboard.dart          # Main dashboard with overview
+├── photographer_profile_setup.dart     # Profile creation/editing
+├── portfolio_management.dart           # Upload/manage photos
+├── booking_requests.dart               # View/manage booking requests
+├── photographer_calendar.dart          # Availability calendar
+├── photographer_services.dart          # Service packages & pricing
+├── photographer_earnings.dart          # Revenue tracking
+├── client_reviews.dart                 # Reviews from clients
+└── photo_gallery.dart                  # Detailed portfolio viewer
+```
+
+## makeup_artists/
+```
+makeup_artists/
+├── makeup_artist_dashboard.dart        # Main dashboard
+├── makeup_artist_profile_setup.dart   # Profile creation/editing
+├── makeup_portfolio.dart               # Before/after photos
+├── makeup_booking_requests.dart       # Booking management
+├── makeup_artist_calendar.dart        # Schedule management
+├── makeup_services.dart               # Service types (bridal, fashion, etc.)
+├── makeup_artist_earnings.dart        # Financial tracking
+├── makeup_reviews.dart                # Client feedback
+└── makeup_techniques_showcase.dart     # Skills demonstration
+```
+
+## venues/
+```
+venues/
+├── venue_dashboard.dart               # Main dashboard
+├── venue_profile_setup.dart          # Venue details setup
+├── venue_gallery.dart                # Venue photos/videos
+├── venue_booking_requests.dart       # Event bookings
+├── venue_calendar.dart               # Availability calendar
+├── venue_packages.dart               # Pricing packages
+├── venue_earnings.dart               # Revenue management
+├── venue_reviews.dart                # Customer reviews
+├── venue_amenities.dart              # Facilities management
+└── venue_floor_plans.dart            # Layout management
+```
+
+## models/
+```
+models/
+├── model_dashboard.dart              # Main dashboard
+├── model_profile_setup.dart         # Profile & measurements
+├── model_portfolio.dart             # Professional photos
+├── model_booking_requests.dart      # Casting calls & bookings
+├── model_calendar.dart              # Schedule management
+├── model_categories.dart            # Fashion, commercial, etc.
+├── model_earnings.dart              # Payment tracking
+├── model_reviews.dart               # Client testimonials
+├── comp_card_generator.dart         # Model comp card creation
+└── casting_applications.dart        # Apply to casting calls
+```
+
+## Common Features Across All Service Providers:
+
+### 1. **Dashboard Components**
+- Earnings summary
+- Recent bookings
+- Upcoming appointments
+- Profile completion status
+- Quick actions menu
+
+### 2. **Profile Setup Pages**
+- Personal information
+- Professional details
+- Service areas/locations
+- Contact information
+- Verification documents
+
+### 3. **Portfolio/Gallery Management**
+- Photo/video uploads
+- Portfolio organization
+- Before/after showcases
+- Work samples categorization
+
+### 4. **Booking Management**
+- Incoming requests
+- Accept/decline functionality
+- Booking details view
+- Client communication
+- Status updates
+
+### 5. **Calendar & Availability**
+- Set available dates/times
+- Block unavailable periods
+- Sync with bookings
+- Recurring availability settings
+
+### 6. **Services & Pricing**
+- Service packages
+- Pricing tiers
+- Add-on services
+- Seasonal pricing
+- Discount management
+
+### 7. **Financial Tracking**
+- Earnings overview
+- Payment history
+- Pending payments
+- Tax information
+- Financial reports
+
+### 8. **Reviews & Ratings**
+- Client reviews display
+- Rating management
+- Response to reviews
+- Review statistics
+
+## Role-Specific Unique Features:
+
+### Photographers:
+- Equipment list
+- Shooting styles
+- Location preferences
+- Delivery timelines
+- Raw photo policies
+
+### Makeup Artists:
+- Makeup styles/techniques
+- Product preferences
+- Trial session options
+- Travel fees
+- Cleanup time
+
+### Venues:
+- Capacity management
+- Floor plan uploads
+- Amenities checklist
+- Catering partnerships
+- Setup/breakdown times
+
+### Models:
+- Measurements & sizes
+- Experience levels
+- Wardrobe options
+- Travel availability
+- Agency representation
+
+## Shared Navigation Structure:
+```dart
+// Each service provider would have similar bottom navigation:
+BottomNavigationBar(
+  items: [
+    BottomNavigationBarItem(icon: Icons.dashboard, label: 'Dashboard'),
+    BottomNavigationBarItem(icon: Icons.calendar_today, label: 'Calendar'),
+    BottomNavigationBarItem(icon: Icons.book_online, label: 'Bookings'),
+    BottomNavigationBarItem(icon: Icons.photo_library, label: 'Portfolio'),
+    BottomNavigationBarItem(icon: Icons.account_balance_wallet, label: 'Earnings'),
+  ],
+)
+```
